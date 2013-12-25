@@ -31,57 +31,55 @@
 
 /**
  * \file
- *      Erbium (Er) example project configuration.
+ *      Example resource
  * \author
  *      Matthias Kovatsch <kovatsch@inf.ethz.ch>
  */
 
-#ifndef __PROJECT_ERBIUM_CONF_H__
-#define __PROJECT_ERBIUM_CONF_H__
+#include "honeywell.h"
 
-/* Custom channel and PAN ID configuration for your project. */
-#undef IEEE802154_CONF_PANID
-#define IEEE802154_CONF_PANID          0xB0B0
+#define DEBUG   DEBUG_NONE
+#include "net/uip-debug.h"
 
-/* IP buffer size must match all other hops, in particular the border router. */
-/*
-#undef UIP_CONF_BUFFER_SIZE
-#define UIP_CONF_BUFFER_SIZE           256
-*/
+static void res_get_handler(void* request, void* response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
+static void res_periodic_handler(void);
 
-/* Disabling RDC for demo purposes. Core updates often require more memory. */
-/* For projects, optimize memory and enable RDC again. */
-#undef NETSTACK_CONF_RDC
-#define NETSTACK_CONF_RDC              nullrdc_driver
+PERIODIC_RESOURCE(res_heartbeat,
+    "title=\"Heartbeat\";obs;rt=\"debug\"",
+    res_get_handler,
+    NULL,
+    NULL,
+    NULL,
+    60*CLOCK_SECOND,
+    res_periodic_handler);
 
-/* Disabling TCP on CoAP nodes. */
-#undef UIP_CONF_TCP
-#define UIP_CONF_TCP                   0
+static int32_t event_counter = 0;
 
-/* Increase rpl-border-router IP-buffer when using more than 64. */
-#undef REST_MAX_CHUNK_SIZE
-#define REST_MAX_CHUNK_SIZE            64
+static int8_t rssi_value[5] = {0};
+static int8_t rssi_count = 0;
+static int8_t rssi_position = 0;
+static int16_t rssi_avg;
 
-/* Estimate your header size, especially when using Proxy-Uri. */
-/*
-#undef COAP_MAX_HEADER_SIZE
-#define COAP_MAX_HEADER_SIZE           70
-*/
+static void
+res_get_handler(void* request, void* response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
+{
+  snprintf_P((char*)buffer, preferred_size, PSTR("{'version':'%s','uptime':%lu,'rssi':%i}"), VERSION, clock_seconds(), rssi_avg);
+  coap_set_header_content_format(response, TEXT_PLAIN);
+  coap_set_payload(response, buffer, strlen((char*)buffer));
+}
 
-/* Multiplies with chunk size, be aware of memory constraints. */
-#undef COAP_MAX_OPEN_TRANSACTIONS
-#define COAP_MAX_OPEN_TRANSACTIONS     4
+static void
+res_periodic_handler()
+{
+  ++event_counter;
 
-/* Must be <= open transactions, default is COAP_MAX_OPEN_TRANSACTIONS-1. */
-/*
-#undef COAP_MAX_OBSERVERS
-#define COAP_MAX_OBSERVERS             2
-*/
+  rssi_value[rssi_position] = radio_sensor.value(0);
+  if (rssi_count<5)
+  {
+    ++rssi_count;
+  }
+  rssi_avg = (rssi_count>0) ? (rssi_value[0] + rssi_value[1] + rssi_value[2] + rssi_value[3] + rssi_value[4])/rssi_count : 0;
+  rssi_position = (++rssi_position) % 5;
 
-/* Filtering .well-known/core per query can be disabled to save space. */
-#undef COAP_LINK_FORMAT_FILTERING
-#define COAP_LINK_FORMAT_FILTERING     0
-#undef COAP_PROXY_OPTION_PROCESSING
-#define COAP_PROXY_OPTION_PROCESSING   0
-
-#endif /* __PROJECT_ERBIUM_CONF_H__ */
+  REST.notify_subscribers(&res_heartbeat);
+}

@@ -1,0 +1,44 @@
+all: honeywell
+
+CONTIKI=../..
+
+CFLAGS += -DPROJECT_CONF_H=\"project-conf.h\"
+
+# variable for root Makefile.include
+WITH_UIP6=1
+UIP_CONF_IPV6=1
+
+CFLAGS += -DUIP_CONF_IPV6=1
+CFLAGS += -DUIP_CONF_IPV6_RPL=1
+
+CFLAGS += -DRF_CHANNEL=25
+
+REST_RESOURCES_DIR = ./resources
+REST_RESOURCES_FILES = $(notdir $(shell find $(REST_RESOURCES_DIR) -name '*.c'))
+
+PROJECTDIRS += $(REST_RESOURCES_DIR)
+PROJECT_SOURCEFILES += $(REST_RESOURCES_FILES)
+
+# linker optimizations
+SMALL=1
+
+# REST Engine shall use Erbium CoAP implementation
+APPS += er-coap
+APPS += rest-engine
+
+# optional rules to get assembly
+#CUSTOM_RULE_C_TO_OBJECTDIR_O = 1
+#CUSTOM_RULE_S_TO_OBJECTDIR_O = 1
+
+CFLAGS += -DADDR_LAST_BYTE=$(ADDR_LAST_BYTE)
+
+# set the baud rate
+CFLAGS += -DAPP_BAUD_RATE=USART_BAUD_2400
+
+#used to be able to use sscanf
+LDFLAGS += -Wl,-u,vfscanf,-lscanf_min
+
+#extmem
+#LDFLAGS += -Wl,--section-start,.data=0x802100,--defsym=__heap_end=0x80ffff
+
+include $(CONTIKI)/Makefile.include

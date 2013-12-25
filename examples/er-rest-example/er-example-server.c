@@ -68,6 +68,9 @@ extern resource_t res_leds, res_toggle;
 #if PLATFORM_HAS_LIGHT
 extern resource_t res_light;
 #endif
+#if 1 //PLATFORM_HAS_RADIO
+extern resource_t res_heartbeat;
+#endif
 
 PROCESS(er_example_server, "Erbium Example Server");
 AUTOSTART_PROCESSES(&er_example_server);
@@ -100,7 +103,7 @@ PROCESS_THREAD(er_example_server, ev, data)
    * WARNING: Activating twice only means alternate path, not two instances!
    * All static variables are the same for each URI path.
    */
-  rest_activate_resource(&res_hello, "test/hello");
+//  rest_activate_resource(&res_hello, "test/hello");
 //  rest_activate_resource(&res_mirror, "debug/mirror");
 //  rest_activate_resource(&res_chunks, "test/chunks");
 //  rest_activate_resource(&res_separate, "test/separate");
@@ -113,6 +116,9 @@ PROCESS_THREAD(er_example_server, ev, data)
 #endif
 #if PLATFORM_HAS_LIGHT
 //  rest_activate_resource(&res_light, "sensors/light");
+#endif
+#if 1 //PLATFORM_HAS_RADIO
+  rest_activate_resource(&res_heartbeat, "debug/heartbeat");
 #endif
 
   /* Define application-specific events here. */

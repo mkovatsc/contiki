@@ -11,6 +11,8 @@ CFLAGS += -DUIP_CONF_IPV6_RPL=1
 
 CFLAGS += -DPROJECT_CONF_H=\"project-conf.h\"
 
+CFLAGS += -DRF_CHANNEL=25
+
 # automatically build RESTful resources
 REST_RESOURCES_DIR = ./resources
 REST_RESOURCES_FILES = $(notdir $(shell find $(REST_RESOURCES_DIR) -name '*.c'))

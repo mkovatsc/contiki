@@ -31,57 +31,48 @@
 
 /**
  * \file
- *      Erbium (Er) example project configuration.
+ *      Example resource
  * \author
  *      Matthias Kovatsch <kovatsch@inf.ethz.ch>
  */
 
-#ifndef __PROJECT_ERBIUM_CONF_H__
-#define __PROJECT_ERBIUM_CONF_H__
+#include "honeywell.h"
 
-/* Custom channel and PAN ID configuration for your project. */
-#undef IEEE802154_CONF_PANID
-#define IEEE802154_CONF_PANID          0xB0B0
+#define DEBUG   DEBUG_NONE
+#include "net/uip-debug.h"
 
-/* IP buffer size must match all other hops, in particular the border router. */
-/*
-#undef UIP_CONF_BUFFER_SIZE
-#define UIP_CONF_BUFFER_SIZE           256
-*/
+extern char rdaddrstr[40];
+extern char ee_rdaddr[40] EEMEM;
 
-/* Disabling RDC for demo purposes. Core updates often require more memory. */
-/* For projects, optimize memory and enable RDC again. */
-#undef NETSTACK_CONF_RDC
-#define NETSTACK_CONF_RDC              nullrdc_driver
+static void res_get_handler(void* request, void* response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
+static void res_put_handler(void* request, void* response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
 
-/* Disabling TCP on CoAP nodes. */
-#undef UIP_CONF_TCP
-#define UIP_CONF_TCP                   0
+RESOURCE(res_register,
+    "title=\"RD Address\";rt=\"debug\"",
+    res_get_handler,
+    NULL,
+    res_put_handler,
+    NULL);
 
-/* Increase rpl-border-router IP-buffer when using more than 64. */
-#undef REST_MAX_CHUNK_SIZE
-#define REST_MAX_CHUNK_SIZE            64
+static void
+res_get_handler(void* request, void* response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
+{
+  snprintf_P((char*)buffer, preferred_size, PSTR("%s"), rdaddrstr);
+  coap_set_payload(response, buffer, strlen((char*)buffer));
+}
 
-/* Estimate your header size, especially when using Proxy-Uri. */
-/*
-#undef COAP_MAX_HEADER_SIZE
-#define COAP_MAX_HEADER_SIZE           70
-*/
+static void
+res_put_handler(void* request, void* response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
+{
+  const char *string = NULL;
+  int len = coap_get_payload(request, (const uint8_t **)&string);
 
-/* Multiplies with chunk size, be aware of memory constraints. */
-#undef COAP_MAX_OPEN_TRANSACTIONS
-#define COAP_MAX_OPEN_TRANSACTIONS     4
-
-/* Must be <= open transactions, default is COAP_MAX_OPEN_TRANSACTIONS-1. */
-/*
-#undef COAP_MAX_OBSERVERS
-#define COAP_MAX_OBSERVERS             2
-*/
-
-/* Filtering .well-known/core per query can be disabled to save space. */
-#undef COAP_LINK_FORMAT_FILTERING
-#define COAP_LINK_FORMAT_FILTERING     0
-#undef COAP_PROXY_OPTION_PROCESSING
-#define COAP_PROXY_OPTION_PROCESSING   0
-
-#endif /* __PROJECT_ERBIUM_CONF_H__ */
+  if(len==39 && string[4]==':' && string[9]==':' && string[14]==':' && string[19]==':' && string[24]==':' && string[29]==':' && string[34]==':') {
+    strncpy(rdaddrstr,string,40);
+    eeprom_write_block(rdaddrstr,ee_rdaddr,40);
+    coap_set_status_code(response, CHANGED_2_04);
+    coap_set_header_content_format(response, TEXT_PLAIN);
+  } else {
+    coap_set_status_code(response, BAD_REQUEST_4_00);
+  }
+}
