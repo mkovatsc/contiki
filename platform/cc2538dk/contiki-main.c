@@ -59,8 +59,8 @@
 #include "lib/random.h"
 #include "net/netstack.h"
 #include "net/queuebuf.h"
-#include "net/tcpip.h"
-#include "net/uip.h"
+#include "net/ip/tcpip.h"
+#include "net/ip/uip.h"
 #include "net/mac/frame802154.h"
 #include "cpu.h"
 #include "reg.h"
@@ -105,16 +105,16 @@ fade(unsigned char l)
 static void
 set_rime_addr()
 {
-  ieee_addr_cpy_to(&rimeaddr_node_addr.u8[0], RIMEADDR_SIZE);
+  ieee_addr_cpy_to(&linkaddr_node_addr.u8[0], LINKADDR_SIZE);
 
 #if STARTUP_CONF_VERBOSE
   {
     int i;
     printf("Rime configured with address ");
-    for(i = 0; i < RIMEADDR_SIZE - 1; i++) {
-      printf("%02x:", rimeaddr_node_addr.u8[i]);
+    for(i = 0; i < LINKADDR_SIZE - 1; i++) {
+      printf("%02x:", linkaddr_node_addr.u8[i]);
     }
-    printf("%02x\n", rimeaddr_node_addr.u8[i]);
+    printf("%02x\n", linkaddr_node_addr.u8[i]);
   }
 #endif
 
@@ -153,8 +153,9 @@ main(void)
    * slip_input_byte instead
    */
 #if UART_CONF_ENABLE
-  uart_init();
-  uart_set_input(serial_line_input_byte);
+  uart_init(0);
+  uart_init(1);
+  uart_set_input(SERIAL_LINE_CONF_UART, serial_line_input_byte);
 #endif
 
 #if USB_SERIAL_CONF_ENABLE
@@ -190,7 +191,7 @@ main(void)
   cc2538_rf_set_addr(IEEE802154_PANID);
 
 #if UIP_CONF_IPV6
-  memcpy(&uip_lladdr.addr, &rimeaddr_node_addr, sizeof(uip_lladdr.addr));
+  memcpy(&uip_lladdr.addr, &linkaddr_node_addr, sizeof(uip_lladdr.addr));
   queuebuf_init();
   process_start(&tcpip_process, NULL);
 #endif /* UIP_CONF_IPV6 */

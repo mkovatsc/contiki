@@ -41,8 +41,8 @@
 #include "rpl-conf.h"
 
 #include "lib/list.h"
-#include "net/uip.h"
-#include "net/uip-ds6.h"
+#include "net/ip/uip.h"
+#include "net/ipv6/uip-ds6.h"
 #include "sys/ctimer.h"
 
 /*---------------------------------------------------------------------------*/
@@ -189,6 +189,9 @@ struct rpl_of {
   rpl_ocp_t ocp;
 };
 typedef struct rpl_of rpl_of_t;
+
+/* Declare the selected objective function. */
+extern rpl_of_t RPL_OF;
 /*---------------------------------------------------------------------------*/
 /* Instance */
 struct rpl_instance {
